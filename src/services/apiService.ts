@@ -1,7 +1,12 @@
+import { HistoryModel } from "../models/HistoryModel";
 import ProjectModel from "../models/projectModel";
+import User from "../models/User";
 
 export default class apiService{
     private static apiKey = '1234';
+    private static userApiKey = 'user';
+    private static currentProject: ProjectModel | null = null;
+    private static historyApiKey = 'history';
 
     static getAllProjects(): ProjectModel[]{
         const projects = JSON.parse(localStorage.getItem(this.apiKey) || '[]');
@@ -18,6 +23,10 @@ export default class apiService{
         const projects = this.getAllProjects();
         const updatedProjects = projects.filter((project: ProjectModel) => project.id !== projectId);
         localStorage.setItem(this.apiKey, JSON.stringify(updatedProjects));
+
+        const histories = this.getAllHistories();
+        const updatedHistories = histories.filter((history: HistoryModel) => history.project !== projectId);
+        localStorage.setItem(this.historyApiKey, JSON.stringify(updatedHistories));
     }
 
     static editProject(project: ProjectModel) : void{
@@ -29,5 +38,51 @@ export default class apiService{
             return p;
         });
         localStorage.setItem(this.apiKey, JSON.stringify(updatedProjects));
+    }
+
+    static getCurrentUser(): User | null {
+        const user = JSON.parse(localStorage.getItem(this.userApiKey) || '[]');
+        return user;
+    }
+
+    static getCurrentProject(): ProjectModel | null {
+        return this.currentProject;
+    }
+
+    static setCurrentProject(project: ProjectModel | null): void {
+        this.currentProject = project;
+    }
+
+    static getAllHistories(): HistoryModel[] {
+        const history = JSON.parse(localStorage.getItem(this.historyApiKey) || '[]');
+        return history
+    }
+
+    static getHistoriesByProjectId(projectId: string): HistoryModel[] {
+        const histories = this.getAllHistories();
+        return histories.filter((history: HistoryModel) => history.project === projectId);
+    }
+
+    static addHistory(history: HistoryModel): void {
+        const historyList = this.getAllHistories();
+        historyList.push(history);
+        localStorage.setItem(this.historyApiKey, JSON.stringify(historyList));
+    }
+
+    static deleteHistory(historyId: string): void {
+        const historyList = this.getAllHistories();
+        const updatedHistory = historyList.filter((history: HistoryModel) => history.id !== historyId);
+        localStorage.setItem(this.historyApiKey, JSON.stringify(updatedHistory));
+    }
+
+    static editHistory(history: HistoryModel): void {
+        const historyList = this.getAllHistories();
+        const updatedHistory = historyList.map((h: HistoryModel) => {
+            if (h.id === history.id) {
+                return history;
+            }
+            return h;
+        });
+        localStorage.setItem(this.historyApiKey, JSON.stringify(updatedHistory));
     }
 }

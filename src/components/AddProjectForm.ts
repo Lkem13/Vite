@@ -32,8 +32,7 @@ const addProjectForm = () => {
       };
 
       apiService.addProject(newProject);
-      const updatedProjects = apiService.getAllProjects();
-      renderProjects(updatedProjects);
+      renderProjects();
 
       projectNameInput.value = '';
       projectDescriptionInput.value = '';
