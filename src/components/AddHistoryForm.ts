@@ -19,7 +19,7 @@ const addHistoryForm = (projectId: string) => {
       <option value="high">High</option>
     </select>
 
-    <label for="historyStatus">State:</label>
+    <label for="historyStatus">Status:</label>
     <select id="historyStatus" name="historyStatus">
       <option value="todo">Todo</option>
       <option value="doing">Doing</option>

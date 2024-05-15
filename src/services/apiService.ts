@@ -7,6 +7,7 @@ export default class apiService{
     private static userApiKey = 'user';
     private static currentProject: ProjectModel | null = null;
     private static historyApiKey = 'history';
+    private static usersApiKey = 'users';
 
     static getAllProjects(): ProjectModel[]{
         const projects = JSON.parse(localStorage.getItem(this.apiKey) || '[]');
@@ -43,6 +44,22 @@ export default class apiService{
     static getCurrentUser(): User | null {
         const user = JSON.parse(localStorage.getItem(this.userApiKey) || '[]');
         return user;
+    }
+
+    static getAllUsers(): User[] {
+        const users = JSON.parse(localStorage.getItem(this.usersApiKey) || '[]')
+        return users;
+    }
+
+    static getUserById(id: string): User[] {
+        const users = this.getAllUsers();
+        return users.filter((user: User) => user.id === id);
+    }
+
+    static addUser(user: User): void {
+        const users = this.getAllUsers();
+        users.push(user);
+        localStorage.setItem(this.usersApiKey, JSON.stringify(users));
     }
 
     static getCurrentProject(): ProjectModel | null {
