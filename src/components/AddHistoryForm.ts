@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
-import { HistoryModel, Priority, Status } from '../models/historyModel';
+import { Priority, Status } from '../models/enums';
+import HistoryModel from '../models/historyModel';
 import apiService from '../services/apiService';
 import { renderHistoryList } from './HistoryList';
 

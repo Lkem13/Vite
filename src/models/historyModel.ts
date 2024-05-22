@@ -1,14 +1,5 @@
-enum Priority {
-    Low = 'low',
-    Medium = 'medium',
-    High = 'high',
-}
+import { Priority, Status } from "./enums";
 
-enum Status {
-    Todo = 'todo',
-    Doing = 'doing',
-    Done = 'done',
-}
 
 interface HistoryModel {
     id: string;
@@ -21,5 +12,4 @@ interface HistoryModel {
     owner: string;
 }
 
-export type { HistoryModel }
-export {Priority, Status };
+export default HistoryModel

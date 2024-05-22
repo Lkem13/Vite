@@ -4,10 +4,13 @@ import apiService from './services/apiService';
 import { renderProjects } from './components/ProjectList';
 import User, { Role} from './models/User';
 
-const currentUser = apiService.getCurrentUser();
+//const currentUser = apiService.getCurrentUser();
+
+//mock
+const currentUser = apiService.getUserById('1');
 
 if (currentUser) {
-    console.log('Zalogowano: ', currentUser);
+    console.log('Zalogowano: ', currentUser.name,', Role: ', currentUser.role);
 } else {
     console.log('Guest');
 }

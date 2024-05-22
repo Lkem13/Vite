@@ -1,5 +1,6 @@
-import { HistoryModel } from "../models/HistoryModel";
+import HistoryModel from "../models/HistoryModel";
 import ProjectModel from "../models/projectModel";
+import TaskModel from "../models/TaskModel";
 import User from "../models/User";
 
 export default class apiService{
@@ -8,10 +9,16 @@ export default class apiService{
     private static currentProject: ProjectModel | null = null;
     private static historyApiKey = 'history';
     private static usersApiKey = 'users';
+    private static tasksApiKey = 'tasks';
 
     static getAllProjects(): ProjectModel[]{
         const projects = JSON.parse(localStorage.getItem(this.apiKey) || '[]');
         return projects;
+    }
+
+    static getProjectById(projectId: string): ProjectModel | null {
+        const projects = this.getAllProjects();
+        return projects.find(project => project.id === projectId) || null;
     }
 
     static addProject(project: ProjectModel) : void{
@@ -47,13 +54,14 @@ export default class apiService{
     }
 
     static getAllUsers(): User[] {
-        const users = JSON.parse(localStorage.getItem(this.usersApiKey) || '[]')
-        return users;
+        const users = JSON.parse(localStorage.getItem(this.usersApiKey) || '[]');
+        return users.map((user: any) => new User(user.id, user.name, user.surname, user.role));
     }
 
-    static getUserById(id: string): User[] {
+    static getUserById(id: string): User | null {
         const users = this.getAllUsers();
-        return users.filter((user: User) => user.id === id);
+        const user = users.find((user: User) => user.id === id);
+        return user || null;
     }
 
     static addUser(user: User): void {
@@ -101,5 +109,26 @@ export default class apiService{
             return h;
         });
         localStorage.setItem(this.historyApiKey, JSON.stringify(updatedHistory));
+    }
+
+    static getAllTasks(): TaskModel[] {
+        const tasks = JSON.parse(localStorage.getItem(this.tasksApiKey) || '[]');
+        return tasks;
+    }
+
+    static getTasksByHistoryId(historyId: string): TaskModel[] {
+        const tasks = this.getAllTasks();
+        return tasks.filter((task) => task.storyId === historyId);
+    }
+
+    static getTaskByName(taskName: string): TaskModel | null {
+        const tasks = this.getAllTasks();
+        return tasks.find(task => task.name === taskName) || null;
+    }
+
+    static addTask(task: TaskModel): void {
+        const tasks = this.getAllTasks();
+        tasks.push(task);
+        localStorage.setItem(this.tasksApiKey, JSON.stringify(tasks));
     }
 }
