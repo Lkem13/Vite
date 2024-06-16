@@ -47,21 +47,53 @@ const renderProjects = (): void => {
 
 
 const handleEdit = (project: ProjectModel): void => {
-    const newName = prompt('Enter new project name:', project.name);
-    const newDescription = prompt('Enter new project description:', project.description);
+    const detailsContainer = document.createElement('div');
+    detailsContainer.classList.add('popup-container');
 
-    if (newName !== null && newName.trim() !== '' && newDescription !== null && newDescription.trim() !== '') {
-        const updatedProject: ProjectModel = {
-            ...project,
-            name: newName,
-            description: newDescription,
-        };
+    const detailsContent = document.createElement('div');
+    detailsContent.classList.add('popup-form');
 
-        apiService.editProject(updatedProject);
-        renderProjects();
-    } else {
-        alert('Invalid input. Please provide non-empty values for name and description.');
+    detailsContent.innerHTML = `
+        <h2>Edit Project</h2>
+        <label for="editProjectName">Name:</label>
+        <input type="text" id="editProjectName" value="${project.name}">
+        <label for="editProjectDescription">Description:</label>
+        <textarea id="editProjectDescription">${project.description}</textarea>
+        <button id="saveEditProjectButton">Save</button>
+        <button id="closeEditProjectButton">Close</button>
+    `;
+
+    const closeButton = detailsContent.querySelector('#closeEditProjectButton');
+    if (closeButton) {
+        closeButton.addEventListener('click', () => {
+            detailsContainer.remove();
+        });
     }
+
+    const saveButton = detailsContent.querySelector('#saveEditProjectButton');
+    if (saveButton) {
+        saveButton.addEventListener('click', () => {
+            const newName = (detailsContent.querySelector('#editProjectName') as HTMLInputElement).value.trim();
+            const newDescription = (detailsContent.querySelector('#editProjectDescription') as HTMLTextAreaElement).value.trim();
+
+            if (newName && newDescription) {
+                const updatedProject: ProjectModel = {
+                    ...project,
+                    name: newName,
+                    description: newDescription,
+                };
+
+                apiService.editProject(updatedProject);
+                renderProjects();
+                detailsContainer.remove();
+            } else {
+                alert('Invalid input. Please provide values for name and description.');
+            }
+        });
+    }
+
+    detailsContainer.appendChild(detailsContent);
+    document.body.appendChild(detailsContainer);
 };
 
 const handleRemove = (projectId: string): void => {

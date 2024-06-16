@@ -2,6 +2,7 @@ import { Priority, Status } from "./enums";
 import User from "./User";
 
 interface TaskModel {
+    id: string;
     name: string;
     description: string;
     priority: Priority;

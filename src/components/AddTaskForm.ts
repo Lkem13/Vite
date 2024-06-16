@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import { Priority, Status } from "../models/enums";
 import TaskModel from '../models/TaskModel';
 import apiService from '../services/apiService';
@@ -54,6 +55,7 @@ const addTaskForm = (storyId: string, projectId: string) => {
 
         if (taskName && taskDescription && taskEstimatedTime) {
             const newTask: TaskModel = {
+                id: uuidv4(),
                 name: taskName,
                 description: taskDescription,
                 priority: taskPriority,

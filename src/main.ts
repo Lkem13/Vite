@@ -15,11 +15,15 @@ if (currentUser) {
     console.log('Guest');
 }
 
-const project: ProjectModel = {
-  id: '1',
-  name: 'Sample Project',
-  description: 'This is a sample project.',
-};
+if (!apiService.getProjectById('1')) {
+    const project: ProjectModel = {
+        id: '1',
+        name: 'Sample Project',
+        description: 'This is a sample project.',
+    };
+    apiService.addProject(project)
+}
+
 
 if (!apiService.getUserById('1')) {
     const admin: User = {
@@ -51,7 +55,6 @@ if (!apiService.getUserById('3')) {
     apiService.addUser(developer);
 }
 
-apiService.addProject(project);
 const projects = apiService.getAllProjects();
 console.log('ProjectModel:', projects);
 renderProjects();
