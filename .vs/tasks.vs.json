@@ -1,0 +1,10 @@
+{
+  "version": "0.2.1",
+  "tasks": [
+    {
+      "taskLabel": "task-index",
+      "appliesTo": "src/services/miniapi/index.ts",
+      "type": "launch"
+    }
+  ]
+}

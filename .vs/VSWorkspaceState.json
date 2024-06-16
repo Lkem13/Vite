@@ -5,8 +5,9 @@
     "\\src",
     "\\src\\components",
     "\\src\\models",
-    "\\src\\services"
+    "\\src\\services",
+    "\\src\\services\\miniapi"
   ],
-  "SelectedNode": "\\tsconfig.json",
+  "SelectedNode": "\\.env",
   "PreviewInSolutionExplorer": false
 }

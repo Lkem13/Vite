@@ -2,9 +2,17 @@ import './style.css';
 import ProjectModel from './models/projectModel';
 import apiService from './services/apiService';
 import { renderProjects } from './components/ProjectList';
-import User, { Role} from './models/User';
+import User, { Role } from './models/User';
+import { createLoginForm } from './components/Login'
+
 
 //const currentUser = apiService.getCurrentUser();
+
+const appDiv = document.getElementById('app');
+if (appDiv) {
+    const loginForm = createLoginForm();
+    appDiv.appendChild(loginForm);
+}
 
 //mock
 const currentUser = apiService.getUserById('1');
@@ -55,6 +63,4 @@ if (!apiService.getUserById('3')) {
     apiService.addUser(developer);
 }
 
-const projects = apiService.getAllProjects();
-console.log('ProjectModel:', projects);
-renderProjects();
+
