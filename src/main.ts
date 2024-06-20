@@ -1,7 +1,6 @@
 import './style.css';
 import ProjectModel from './models/projectModel';
 import apiService from './services/apiService';
-import { renderProjects } from './components/ProjectList';
 import User, { Role } from './models/User';
 import { createLoginForm } from './components/Login'
 

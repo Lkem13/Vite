@@ -24,8 +24,10 @@
     "vite": "^5.1.5"
   },
   "dependencies": {
+    "@types/mongodb": "^4.0.7",
     "axios": "^1.7.2",
     "concurrently": "^8.2.2",
+    "mongodb": "^6.7.0",
     "uuid": "^9.0.1"
   }
 }
