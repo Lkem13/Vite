@@ -1,42 +1,49 @@
+import axios from 'axios';
 import ProjectModel from '../models/projectModel';
 import apiService from '../services/apiService';
 import addProjectForm from './AddProjectForm';
 import { renderHistoryList } from './HistoryList';
 
 
-const renderProjects = (): void => {
+const renderProjects = async (): Promise<void> => {
     const currentProject = apiService.getCurrentProject();
     const appContainer = document.getElementById('app');
-
+    
     if (appContainer) {
         appContainer.innerHTML = '';
         const projectList = document.createElement('ul');
         if (currentProject) {
-            renderHistoryList(currentProject.id);
+            renderHistoryList(currentProject._id);
         } else {
-            const projects = apiService.getAllProjects();
-            projects.forEach((project) => {
-                const listItem = document.createElement('li');
-                listItem.textContent = `Name: ${project.name} - Description: ${project.description}`;
-
-                const editButton = document.createElement('button');
-                editButton.textContent = 'Edit';
-                editButton.addEventListener('click', () => handleEdit(project));
-
-                const removeButton = document.createElement('button');
-                removeButton.textContent = 'Remove';
-                removeButton.addEventListener('click', () => handleRemove(project.id));
-
-                const selectButton = document.createElement('button');
-                selectButton.textContent = 'Select';
-                selectButton.addEventListener('click', () => handleSelect(project));
-
-                listItem.appendChild(editButton);
-                listItem.appendChild(removeButton);
-                listItem.appendChild(selectButton);
-
-                projectList.appendChild(listItem);
-            });
+            try{
+                const projectsResponse = await axios.get('http://localhost:3000/projects');
+                const projects = projectsResponse.data;
+                projects.forEach((project: ProjectModel) => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `Name: ${project.name} - Description: ${project.description}`;
+    
+                    const editButton = document.createElement('button');
+                    editButton.textContent = 'Edit';
+                    editButton.addEventListener('click', () => handleEdit(project));
+    
+                    const removeButton = document.createElement('button');
+                    removeButton.textContent = 'Remove';
+                    removeButton.addEventListener('click', () => handleRemove(project._id));
+    
+                    const selectButton = document.createElement('button');
+                    selectButton.textContent = 'Select';
+                    selectButton.addEventListener('click', () => handleSelect(project));
+    
+                    listItem.appendChild(editButton);
+                    listItem.appendChild(removeButton);
+                    listItem.appendChild(selectButton);
+    
+                    projectList.appendChild(listItem);
+                    
+                });
+            } catch (fetchError) {
+                console.error('Failed to fetch projects:', fetchError);
+            }
         }
         appContainer.appendChild(projectList);
         if (!currentProject) {
@@ -96,12 +103,17 @@ const handleEdit = (project: ProjectModel): void => {
     document.body.appendChild(detailsContainer);
 };
 
-const handleRemove = (projectId: string): void => {
+const handleRemove = async (projectId: string): Promise<void> => {
     const isConfirmed = confirm('Are you sure you want to remove this project?');
 
     if (isConfirmed) {
-        apiService.deleteProject(projectId);
-        renderProjects();
+        try{
+            console.log(projectId);
+            await axios.delete('http://localhost:3000/projects/${projectId}');
+            renderProjects();
+        } catch (fetchError) {
+            console.error('Failed to remove project:', fetchError);
+        }
     }
 };
 

@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import ProjectModel from '../models/projectModel';
-import apiService from '../services/apiService';
 import { renderProjects } from './ProjectList';
+import axios from 'axios';
 
 const addProjectForm = () => {
   const addProjectForm = document.createElement('form');
@@ -15,7 +15,7 @@ const addProjectForm = () => {
     <button type="submit">Add Project</button>
   `;
 
-  addProjectForm.addEventListener('submit', (event) => {
+  addProjectForm.addEventListener('submit', async (event) => {
     event.preventDefault();
 
     const projectNameInput = document.getElementById('projectName') as HTMLInputElement;
@@ -26,16 +26,18 @@ const addProjectForm = () => {
 
     if (projectName && projectDescription) {
       const newProject: ProjectModel = {
-        id: uuidv4(),
+        _id: uuidv4(),
         name: projectName,
         description: projectDescription,
       };
-
-      apiService.addProject(newProject);
-      renderProjects();
-
-      projectNameInput.value = '';
-      projectDescriptionInput.value = '';
+      try{
+        await axios.post('http://localhost:3000/projects', newProject);
+        renderProjects();
+        projectNameInput.value = '';
+        projectDescriptionInput.value = '';
+      } catch (error) {
+          console.error('Failed to create project', error);
+      }
     }
   });
 

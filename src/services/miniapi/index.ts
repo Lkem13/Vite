@@ -1,6 +1,8 @@
 import * as jwt from 'jsonwebtoken';
 import express, { Express, Request, Response } from "express";
 import * as dotenv from 'dotenv';
+import { connectToDb, getDb } from './mongodb';
+import ProjectModel from '../../models/projectModel';
 
 dotenv.config();
 
@@ -13,10 +15,8 @@ const port = process.env.PORT || 3000;
 const tokenSecret = process.env.TOKEN_SECRET as string
 console.log('Token Secret:', tokenSecret);
 let refreshToken: string
-
 app.use(cors())
 app.use(express.json())
-
 
 app.get('/', (req: Request, res: Response) => {
     res.send('Hello World - simple api with JWT!')
@@ -57,8 +57,15 @@ app.get(
         }, delay)
     }
 )
-app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`)
+app.listen(port, async () => {
+    try{
+        await connectToDb();
+        console.log(`Example app listening on port ${port}`)
+    } catch (error){
+        console.error('Error:', error);
+        process.exit(1);
+    }
+    
 })
 
 function generateToken(expirationInSeconds: number) {
@@ -82,3 +89,69 @@ function verifyToken(req: any, res: any, next: any) {
         next()
     })
 }
+
+app.get('/projects', async (req, res) => {
+    try{
+        const db = getDb();
+        const projects = await db.collection('projects').find().toArray();
+        res.send(projects).status(200);
+    } catch(error){
+        console.error('Error fetching projects:', error);
+        res.sendStatus(500);
+    }
+});
+
+app.get('/projects/:id', async (req, res) => {
+    try{
+        const db = getDb();
+        const project = await db.collection('projects').findOne(req.body);
+        if(project){
+            res.send(project);
+        }else{
+            console.error('Project not found');
+            res.sendStatus(404);
+        }
+    } catch(error){
+        console.error('Error fetching project:', error);
+        res.sendStatus(500);
+    }
+});
+
+app.post('/projects', async (req: Request, res: Response) => {
+    try {
+        const db = getDb();
+        const newProject: ProjectModel = req.body;
+        const result = await db.collection('projects').insertOne(newProject);
+        res.send(result).status(201);
+        console.log('Project created:', result);
+    } catch (error) {
+        console.error('Failed to create project', error);
+        res.sendStatus(500);
+    }
+});
+
+app.put('/projects/:id', async (req: Request, res: Response) => {
+    try {
+        const db = getDb();
+        const updatedProject: ProjectModel = req.body;
+        const result = await db.collection('projects').findOneAndUpdate(
+            { $set: updatedProject },
+            {returnOriginal: false}
+        );
+            res.send(result.value);
+        } catch (error) {
+        console.error('Failed to update project', error);
+        res.sendStatus(500);
+    }
+});
+
+app.delete('/projects/:id', async (req: Request, res: Response) => {
+    try {
+        const db = getDb();
+        await db.collection('projects').deleteOne(req.body);
+        res.sendStatus(200);
+    } catch (error) {
+        console.error('Failed to delete project', error);
+        res.sendStatus(500);
+    }
+});

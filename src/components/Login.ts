@@ -1,5 +1,4 @@
 import axios from 'axios';
-import apiService from '../services/apiService';
 import { renderProjects } from './ProjectList';
 
 export function createLoginForm(): HTMLDivElement {
@@ -41,14 +40,16 @@ export function createLoginForm(): HTMLDivElement {
             messageDiv.textContent = 'Login successful!';
             messageDiv2.textContent = `Redirecting in ${i} seconds...`;
             
-            const interval = setInterval(() => {
+            const interval = setInterval(async () => {
                 i--;
                 messageDiv2.textContent = `Redirecting in ${i} seconds...`;
                 if (i < 1) {
                     clearInterval(interval);
-                    const projects = apiService.getAllProjects();
-                    console.log('ProjectModel:', projects);
-                    renderProjects();
+                    try {
+                        renderProjects();
+                    } catch (fetchError) {
+                        console.error('Failed to fetch projects:', fetchError);
+                    }
                 }
             }, 1000);
             

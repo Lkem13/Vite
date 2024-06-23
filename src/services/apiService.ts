@@ -1,6 +1,6 @@
-import HistoryModel from "../models/HistoryModel";
+import HistoryModel from "../models/historyModel";
 import ProjectModel from "../models/projectModel";
-import TaskModel from "../models/TaskModel";
+import TaskModel from "../models/taskModel";
 import User from "../models/User";
 
 export default class apiService{
@@ -18,7 +18,7 @@ export default class apiService{
 
     static getProjectById(projectId: string): ProjectModel | null {
         const projects = this.getAllProjects();
-        return projects.find(project => project.id === projectId) || null;
+        return projects.find(project => project._id === projectId) || null;
     }
 
     static addProject(project: ProjectModel) : void{
@@ -29,7 +29,7 @@ export default class apiService{
 
     static deleteProject(projectId: string) : void{
         const projects = this.getAllProjects();
-        const updatedProjects = projects.filter((project: ProjectModel) => project.id !== projectId);
+        const updatedProjects = projects.filter((project: ProjectModel) => project._id !== projectId);
         localStorage.setItem(this.apiKey, JSON.stringify(updatedProjects));
 
         const histories = this.getAllHistories();
@@ -40,7 +40,7 @@ export default class apiService{
     static editProject(project: ProjectModel) : void{
         const projects = this.getAllProjects();
         const updatedProjects = projects.map((p: ProjectModel) => {
-            if(p.id === project.id){
+            if(p._id === project._id){
                 return project;
             }
             return p;

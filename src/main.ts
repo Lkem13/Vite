@@ -24,7 +24,7 @@ if (currentUser) {
 
 if (!apiService.getProjectById('1')) {
     const project: ProjectModel = {
-        id: '1',
+        _id: '1',
         name: 'Sample Project',
         description: 'This is a sample project.',
     };
