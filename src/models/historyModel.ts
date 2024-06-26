@@ -2,7 +2,7 @@ import { Priority, Status } from "./enums";
 
 
 interface HistoryModel {
-    id: string;
+    _id: string;
     name: string;
     description: string;
     priority: Priority;

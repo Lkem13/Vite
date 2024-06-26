@@ -79,7 +79,7 @@ const handleEdit = (project: ProjectModel): void => {
 
     const saveButton = detailsContent.querySelector('#saveEditProjectButton');
     if (saveButton) {
-        saveButton.addEventListener('click', () => {
+        saveButton.addEventListener('click', async () => {
             const newName = (detailsContent.querySelector('#editProjectName') as HTMLInputElement).value.trim();
             const newDescription = (detailsContent.querySelector('#editProjectDescription') as HTMLTextAreaElement).value.trim();
 
@@ -90,7 +90,7 @@ const handleEdit = (project: ProjectModel): void => {
                     description: newDescription,
                 };
 
-                apiService.editProject(updatedProject);
+                await axios.put(`http://localhost:3000/projects/${project._id}`, updatedProject);
                 renderProjects();
                 detailsContainer.remove();
             } else {
@@ -109,7 +109,7 @@ const handleRemove = async (projectId: string): Promise<void> => {
     if (isConfirmed) {
         try{
             console.log(projectId);
-            await axios.delete('http://localhost:3000/projects/${projectId}');
+            await axios.delete(`http://localhost:3000/projects/${projectId}`);
             renderProjects();
         } catch (fetchError) {
             console.error('Failed to remove project:', fetchError);

@@ -1,3 +1,4 @@
+import axios from 'axios';
 import { Priority, Status } from '../models/enums';
 import HistoryModel from '../models/historyModel';
 import apiService from '../services/apiService';
@@ -6,21 +7,22 @@ import addTaskForm from './AddTaskForm';
 import renderKanbanBoard from './KanbanBoard';
 
 
-const renderHistoryList = (projectId: string): void => {
+const renderHistoryList = async (projectId: string): Promise<void> => {
     const appContainer = document.getElementById('app');
 
     if (appContainer) {
-        const histories = apiService.getHistoriesByProjectId(projectId);
+        const historiesresponse = await axios.get<HistoryModel[]>(`http://localhost:3000/projects/${projectId}/histories`);
+        const histories = historiesresponse.data;
+
         appContainer.innerHTML = '';
         appContainer.appendChild(addHistoryForm(projectId));
 
         const kanbanContainer = document.createElement('div');
         kanbanContainer.classList.add('kanban-container');
 
-        const todoHistories = histories.filter(history => history.status === Status.Todo);
-        const doingHistories = histories.filter(history => history.status === Status.Doing);
-        const doneHistories = histories.filter(history => history.status === Status.Done);
-
+        const todoHistories = histories.filter((history: { status: Status; }) => history.status === Status.Todo);
+        const doingHistories = histories.filter((history: { status: Status; }) => history.status === Status.Doing);
+        const doneHistories = histories.filter((history: { status: Status; }) => history.status === Status.Done);
         renderHistories(todoHistories, "Todo");
         renderHistories(doingHistories, "Doing");
         renderHistories(doneHistories, "Done");
@@ -43,25 +45,25 @@ const renderHistories = (histories: HistoryModel[], title: string, container?: H
 
             const removeButton = document.createElement('button');
             removeButton.textContent = 'Remove';
-            removeButton.addEventListener('click', () => handleRemove(history.id, history.project));
+            removeButton.addEventListener('click', () => handleRemove(history._id, history.project));
 
             const kanbanButton = document.createElement('button');
             kanbanButton.textContent = 'Kanban';
-            kanbanButton.addEventListener('click', () => renderKanbanBoard(history.id));
+            kanbanButton.addEventListener('click', () => renderKanbanBoard(history._id));
 
             const addTaskButton = document.createElement('button');
             addTaskButton.textContent = 'Add Task';
-            addTaskButton.addEventListener('click', () => handleAddTask(history.id, history.project));
+            addTaskButton.addEventListener('click', () => handleAddTask(history._id, history.project));
 
             const taskList = document.createElement('ul');
-            const tasks = apiService.getTasksByHistoryId(history.id);
+            const tasks = apiService.getTasksByHistoryId(history._id);
             tasks.forEach((task) => {
                 const taskItem = document.createElement('li');
                 taskItem.textContent = `Task: ${task.name} - Description: ${task.description} - Priority: ${task.priority} - Status: ${task.status}`;
 
                 const detailsButton = document.createElement('button');
                 detailsButton.textContent = 'Details';
-                detailsButton.addEventListener('click', () => handleTaskDetails(task.id, history.project, history.id));
+                detailsButton.addEventListener('click', () => handleTaskDetails(task.id, history.project, history._id));
 
                 taskItem.appendChild(detailsButton);
                 taskList.appendChild(taskItem);
@@ -172,9 +174,10 @@ const handleRemoveTask = (taskId: string, projectId: string): void => {
     }
 };
 
-const handleTaskDetails = (taskId: string, projectId: string, historyId: string): void => {
+const handleTaskDetails = async (taskId: string, projectId: string, historyId: string): Promise<void> => {
     const task = apiService.getTaskById(taskId);
-    const project = apiService.getProjectById(projectId);
+    const projectsResponse = await axios.get(`http://localhost:3000/projects/${projectId}`);
+    const project = projectsResponse.data;
     const history = apiService.getHistoryById(historyId);
 
     if (history && task) {
@@ -248,7 +251,7 @@ const handleTaskDetails = (taskId: string, projectId: string, historyId: string)
                 assignButton.addEventListener('click', () => {
                     const userId = (detailsContent.querySelector('#assignUser') as HTMLSelectElement).value;
                     if (userId) {
-                        handleAssignUserToTask(task.id, userId, projectId, history.id);
+                        handleAssignUserToTask(task.id, userId, projectId, history._id);
                         detailsContainer.remove();
                     } else {
                         alert('Please select a user to assign.');

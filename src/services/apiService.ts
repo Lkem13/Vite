@@ -11,6 +11,7 @@ export default class apiService{
     private static usersApiKey = 'users';
     private static tasksApiKey = 'tasks';
 
+    /*
     static getAllProjects(): ProjectModel[]{
         const projects = JSON.parse(localStorage.getItem(this.apiKey) || '[]');
         return projects;
@@ -46,7 +47,7 @@ export default class apiService{
             return p;
         });
         localStorage.setItem(this.apiKey, JSON.stringify(updatedProjects));
-    }
+    }   */
 
     static getCurrentUser(): User | null {
         const user = JSON.parse(localStorage.getItem(this.userApiKey) || '[]');

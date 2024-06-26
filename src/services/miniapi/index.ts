@@ -3,6 +3,7 @@ import express, { Express, Request, Response } from "express";
 import * as dotenv from 'dotenv';
 import { connectToDb, getDb } from './mongodb';
 import ProjectModel from '../../models/projectModel';
+import HistoryModel from '../../models/historyModel';
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ const port = process.env.PORT || 3000;
 const tokenSecret = process.env.TOKEN_SECRET as string
 console.log('Token Secret:', tokenSecret);
 let refreshToken: string
+let currentProject: ProjectModel | null = null;
 app.use(cors())
 app.use(express.json())
 
@@ -117,6 +119,19 @@ app.get('/projects/:id', async (req, res) => {
     }
 });
 
+app.get('/projects/:project/histories', async (req, res) => {
+    try {
+        console.log('Fetching histories for projectId:', req.params.project);
+        const db = getDb();
+        const histories = await db.collection('histories').find({ project: req.params.project }).toArray();
+        console.log('Fetched histories:', histories);
+        res.status(200).send(histories);
+    } catch (error) {
+        console.error('Error fetching histories:', error);
+        res.sendStatus(500);
+    }
+});
+
 app.post('/projects', async (req: Request, res: Response) => {
     try {
         const db = getDb();
@@ -135,6 +150,7 @@ app.put('/projects/:id', async (req: Request, res: Response) => {
         const db = getDb();
         const updatedProject: ProjectModel = req.body;
         const result = await db.collection('projects').findOneAndUpdate(
+            { _id: req.params.id },
             { $set: updatedProject },
             {returnOriginal: false}
         );
@@ -152,6 +168,21 @@ app.delete('/projects/:id', async (req: Request, res: Response) => {
         res.sendStatus(200);
     } catch (error) {
         console.error('Failed to delete project', error);
+        res.sendStatus(500);
+    }
+});
+
+app.post('/projects/:projectId/histories', async (req: Request, res: Response) => {
+    try {
+        const db = getDb();
+        const newHistory: HistoryModel = req.body;
+        newHistory.project = req.params.projectId;
+        newHistory.creationDate = new Date();
+        const result = await db.collection('histories').insertOne(newHistory);
+        res.send(result).status(201);
+        console.log('History created:', result);
+    } catch (error) {
+        console.error('Failed to create history', error);
         res.sendStatus(500);
     }
 });

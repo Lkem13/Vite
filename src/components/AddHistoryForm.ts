@@ -3,6 +3,7 @@ import { Priority, Status } from '../models/enums';
 import HistoryModel from '../models/historyModel';
 import apiService from '../services/apiService';
 import { renderHistoryList } from './HistoryList';
+import axios from 'axios';
 
 const addHistoryForm = (projectId: string) => {
     const addHistoryForm = document.createElement('form');
@@ -30,7 +31,7 @@ const addHistoryForm = (projectId: string) => {
     <button type="submit">Add History</button>
   `;
 
-    addHistoryForm.addEventListener('submit', (event) => {
+    addHistoryForm.addEventListener('submit', async (event) => {
         event.preventDefault();
 
         const historyNameInput = document.getElementById('historyName') as HTMLInputElement;
@@ -47,7 +48,7 @@ const addHistoryForm = (projectId: string) => {
             const currentUser = apiService.getCurrentUser();
             if (currentUser) {
                 const newHistory: HistoryModel = {
-                    id: uuidv4(),
+                    _id: uuidv4(),
                     name: historyName,
                     description: historyDescription,
                     priority: historyPriority,
@@ -56,14 +57,15 @@ const addHistoryForm = (projectId: string) => {
                     status: historyStatus,
                     owner: currentUser.id,
                 };
+                try{
+                  await axios.post(`http://localhost:3000/projects/${projectId}/histories`, newHistory);
+                  await renderHistoryList(projectId);
 
-                apiService.addHistory(newHistory);
-                renderHistoryList(projectId);
-
-                historyNameInput.value = '';
-                historyDescriptionInput.value = '';
-                historyPriorityInput.value = 'low';
-                historyStatusInput.value = 'todo';
+                  addHistoryForm.reset();
+                }catch(error){
+                  console.error('Failed to add history:', error);
+                }
+                
             }
         }
     });

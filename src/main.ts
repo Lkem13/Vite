@@ -3,6 +3,7 @@ import ProjectModel from './models/projectModel';
 import apiService from './services/apiService';
 import User, { Role } from './models/User';
 import { createLoginForm } from './components/Login'
+import axios from 'axios';
 
 
 //const currentUser = apiService.getCurrentUser();
@@ -22,13 +23,16 @@ if (currentUser) {
     console.log('Guest');
 }
 
-if (!apiService.getProjectById('1')) {
+const response = await axios.get('http://localhost:3000/projects/1');
+console.log(response.status);
+if (response.status === 200) {
     const project: ProjectModel = {
         _id: '1',
         name: 'Sample Project',
         description: 'This is a sample project.',
     };
-    apiService.addProject(project)
+    await axios.post('http://localhost:300/projects', project);
+    console.log('test');
 }
 
 
