@@ -78,7 +78,7 @@ export default class apiService{
     static setCurrentProject(project: ProjectModel | null): void {
         this.currentProject = project;
     }
-
+/*
     static getAllHistories(): HistoryModel[] {
         const history = JSON.parse(localStorage.getItem(this.historyApiKey) || '[]');
         return history
@@ -86,7 +86,7 @@ export default class apiService{
 
     static getHistoryById(historyId: string): HistoryModel | null {
         const histories = this.getAllHistories();
-        return histories.find(history => history.id === historyId) || null;
+        return histories.find(history => history._id === historyId) || null;
     }
 
     static getHistoriesByProjectId(projectId: string): HistoryModel[] {
@@ -102,14 +102,14 @@ export default class apiService{
 
     static deleteHistory(historyId: string): void {
         const historyList = this.getAllHistories();
-        const updatedHistory = historyList.filter((history: HistoryModel) => history.id !== historyId);
+        const updatedHistory = historyList.filter((history: HistoryModel) => history._id !== historyId);
         localStorage.setItem(this.historyApiKey, JSON.stringify(updatedHistory));
     }
 
     static editHistory(history: HistoryModel): void {
         const historyList = this.getAllHistories();
         const updatedHistory = historyList.map((h: HistoryModel) => {
-            if (h.id === history.id) {
+            if (h._id === history._id) {
                 return history;
             }
             return h;
@@ -128,12 +128,12 @@ export default class apiService{
 
     static getTasksByHistoryId(historyId: string): TaskModel[] {
         const tasks = this.getAllTasks();
-        return tasks.filter((task) => task.storyId === historyId);
+        return tasks.filter((task) => task.historyId === historyId);
     }
 
     static getTaskById(taskId: string): TaskModel | null {
         const tasks = this.getAllTasks();
-        return tasks.find(task => task.id === taskId) || null;
+        return tasks.find(task => task._id === taskId) || null;
     }
 
     static addTask(task: TaskModel): void {
@@ -145,7 +145,7 @@ export default class apiService{
     static updateTask(updatedTask: TaskModel): void {
         const tasks = this.getAllTasks();
         const updatedTasks = tasks.map((task) => {
-            if (task.id === updatedTask.id) {
+            if (task._id === updatedTask._id) {
                 return updatedTask;
             }
             return task;
@@ -155,7 +155,7 @@ export default class apiService{
 
     static deleteTask(taskId: string): void {
         const taskList = this.getAllTasks();
-        const updatedTask = taskList.filter((task: TaskModel) => task.id !== taskId);
+        const updatedTask = taskList.filter((task: TaskModel) => task._id !== taskId);
         localStorage.setItem(this.tasksApiKey, JSON.stringify(updatedTask));
-    }
+    }*/
 }

@@ -2,11 +2,11 @@ import { Priority, Status } from "./enums";
 import User from "./User";
 
 interface TaskModel {
-    id: string;
+    _id: string;
     name: string;
     description: string;
     priority: Priority;
-    storyId: string;
+    historyId: string;
     estimatedTime: number;
     status: Status;
     addDate: Date;

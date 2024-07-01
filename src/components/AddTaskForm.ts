@@ -1,10 +1,10 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Priority, Status } from "../models/enums";
-import TaskModel from '../models/TaskModel';
-import apiService from '../services/apiService';
+import TaskModel from '../models/taskModel';
 import { renderHistoryList } from "./HistoryList";
+import axios from 'axios';
 
-const addTaskForm = (storyId: string, projectId: string) => {
+const addTaskForm = (historyId: string, projectId: string) => {
     const formContainer = document.createElement('div');
     formContainer.classList.add('popup-container');
 
@@ -38,7 +38,7 @@ const addTaskForm = (storyId: string, projectId: string) => {
         <button type="button" id="cancelButton">Cancel</button>
     `;
 
-    addTaskForm.addEventListener('submit', (event) => {
+    addTaskForm.addEventListener('submit', async (event) => {
         event.preventDefault();
 
         const taskNameInput = document.getElementById('taskName') as HTMLInputElement;
@@ -55,11 +55,11 @@ const addTaskForm = (storyId: string, projectId: string) => {
 
         if (taskName && taskDescription && taskEstimatedTime) {
             const newTask: TaskModel = {
-                id: uuidv4(),
+                _id: uuidv4(),
                 name: taskName,
                 description: taskDescription,
                 priority: taskPriority,
-                storyId: storyId,
+                historyId: historyId,
                 estimatedTime: taskEstimatedTime,
                 status: taskStatus,
                 addDate: new Date(),
@@ -67,9 +67,13 @@ const addTaskForm = (storyId: string, projectId: string) => {
                 endDate: taskStatus === 'done' ? new Date() : undefined,
             };
 
-            apiService.addTask(newTask);
-            renderHistoryList(projectId);
-            formContainer.remove();
+            try{
+                await axios.post(`http://localhost:3000/histories/${historyId}/tasks`, newTask);
+                await renderHistoryList(projectId);
+                formContainer.remove();
+            }catch(error){
+                console.error('Failed to add task:', error);
+            }
         }
     });
 

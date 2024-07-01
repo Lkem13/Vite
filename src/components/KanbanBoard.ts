@@ -1,18 +1,19 @@
+import axios from 'axios';
 import { Status } from '../models/enums';
 import TaskModel from '../models/taskModel';
-import apiService from '../services/apiService';
 import { renderHistoryList } from './HistoryList';
 
-const renderKanbanBoard = (historyId: string): void => {
-    const histories = apiService.getAllHistories();
-    const history = histories.find(history => history.id === historyId);
+const renderKanbanBoard = async (historyId: string): Promise<void> => {
+    const historiesResponse = await axios.get(`http://localhost:3000/histories/${historyId}`);
+    const histories = historiesResponse.data;
+    const tasksResponse = await axios.get(`http://localhost:3000/histories/${historyId}/tasks`);
+    const tasks = tasksResponse.data;
+
 
     if (!history) {
         console.error(`History with ID ${historyId} not found.`);
         return;
     }
-
-    const tasks = apiService.getTasksByHistoryId(historyId);
 
     console.log('Rendering Kanban board for history:', history);
     console.log('Tasks:', tasks);
@@ -22,7 +23,7 @@ const renderKanbanBoard = (historyId: string): void => {
         kanbanContainer.innerHTML = `
             <div class="kanban-board">
             <button id="returnButton">Return</button>
-                <h2>${history.name} Kanban</h2>
+                <h2>${histories.name} Kanban</h2>
                 <div class="kanban-columns">
                     <div class="kanban-column" id="todo-column">
                         <h3>Todo</h3>
@@ -45,7 +46,7 @@ const renderKanbanBoard = (historyId: string): void => {
         const doneColumn = document.getElementById('done-tasks');
 
         if (todoColumn && doingColumn && doneColumn) {
-            tasks.forEach(task => {
+            tasks.forEach((task: TaskModel) => {
                 const taskElement = createTaskElement(task);
                 if (task.status === Status.Todo) {
                     todoColumn.appendChild(taskElement);
@@ -59,7 +60,7 @@ const renderKanbanBoard = (historyId: string): void => {
             const returnButton = document.getElementById('returnButton');
             if (returnButton) {
                 returnButton.addEventListener('click', () => {
-                    renderHistoryList(history.project);
+                    renderHistoryList(histories.project);
                 });
             }
         }

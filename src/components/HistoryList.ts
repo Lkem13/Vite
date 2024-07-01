@@ -35,7 +35,7 @@ const renderHistories = (histories: HistoryModel[], title: string, container?: H
     if (appContainer) {
         const historyList = document.createElement('ul');
 
-        histories.forEach((history: HistoryModel) => {
+        histories.forEach(async (history: HistoryModel) => {
             const listItem = document.createElement('li');
             listItem.textContent = `Name: ${history.name} - Description: ${history.description} - Priority: ${history.priority} - Status: ${history.status}`;
 
@@ -56,14 +56,17 @@ const renderHistories = (histories: HistoryModel[], title: string, container?: H
             addTaskButton.addEventListener('click', () => handleAddTask(history._id, history.project));
 
             const taskList = document.createElement('ul');
-            const tasks = apiService.getTasksByHistoryId(history._id);
-            tasks.forEach((task) => {
+            
+            const tasksResponse = await axios.get(`http://localhost:3000/histories/${history._id}/tasks`);
+            const tasks = tasksResponse.data;
+
+            tasks.forEach((task: { name: string; description: string; priority: Priority; status: Status; _id: string; }) => {
                 const taskItem = document.createElement('li');
                 taskItem.textContent = `Task: ${task.name} - Description: ${task.description} - Priority: ${task.priority} - Status: ${task.status}`;
 
                 const detailsButton = document.createElement('button');
                 detailsButton.textContent = 'Details';
-                detailsButton.addEventListener('click', () => handleTaskDetails(task.id, history.project, history._id));
+                detailsButton.addEventListener('click', () => handleTaskDetails(task._id, history.project, history._id));
 
                 taskItem.appendChild(detailsButton);
                 taskList.appendChild(taskItem);
@@ -120,7 +123,7 @@ const handleEdit = (history: HistoryModel): void => {
 
     const saveButton = detailsContent.querySelector('#saveEditButton');
     if (saveButton) {
-        saveButton.addEventListener('click', () => {
+        saveButton.addEventListener('click', async () => {
             const newName = (detailsContent.querySelector('#editName') as HTMLInputElement).value.trim();
             const newDescription = (detailsContent.querySelector('#editDescription') as HTMLTextAreaElement).value.trim();
             const newPriority = (detailsContent.querySelector('#editPriority') as HTMLSelectElement).value as Priority;
@@ -134,8 +137,8 @@ const handleEdit = (history: HistoryModel): void => {
                     priority: newPriority,
                     status: newStatus,
                 };
-
-                apiService.editHistory(updatedHistory);
+                
+                await axios.put(`http://localhost:3000/histories/${history._id}`, updatedHistory);
                 renderHistoryList(updatedHistory.project);
                 detailsContainer.remove();
             } else {
@@ -148,12 +151,16 @@ const handleEdit = (history: HistoryModel): void => {
     document.body.appendChild(detailsContainer);
 };
 
-const handleRemove = (historyId: string, projectId: string): void => {
+const handleRemove = async (historyId: string, projectId: string): Promise<void> => {
     const isConfirmed = confirm('Are you sure you want to remove this history?');
 
     if (isConfirmed) {
-        apiService.deleteHistory(historyId);
-        renderHistoryList(projectId);
+        try{
+            await axios.delete(`http://localhost:3000/histories/${historyId}`);
+            renderHistoryList(projectId);
+        }catch(error){
+            console.error('Failed to remove history:', error);
+        }
     }
 };
 
@@ -165,20 +172,26 @@ const handleAddTask = (historyId: string, projectId: string): void => {
     }
 }
 
-const handleRemoveTask = (taskId: string, projectId: string): void => {
+const handleRemoveTask = async (taskId: string, projectId: string): Promise<void> => {
     const isConfirmed = confirm('Are you sure you want to remove this task?');
 
     if (isConfirmed) {
-        apiService.deleteTask(taskId);
-        renderHistoryList(projectId);
+        try{
+            await axios.delete(`http://localhost:3000/tasks/${taskId}`);
+            renderHistoryList(projectId);
+        }catch(error){
+            console.error('Failed to remove task:', error);
+        }
     }
 };
 
 const handleTaskDetails = async (taskId: string, projectId: string, historyId: string): Promise<void> => {
-    const task = apiService.getTaskById(taskId);
+    const tasksResponse = await axios.get(`http://localhost:3000/tasks/${taskId}`);
+    const task = tasksResponse.data;
     const projectsResponse = await axios.get(`http://localhost:3000/projects/${projectId}`);
     const project = projectsResponse.data;
-    const history = apiService.getHistoryById(historyId);
+    const historiesRespone = await axios.get(`http://localhost:3000/histories/${historyId}`);
+    const history = historiesRespone.data;
 
     if (history && task) {
         const assignedUser = task.assignedUser ? `${task.assignedUser.name} ${task.assignedUser.surname}` : 'Unassigned';
@@ -251,7 +264,7 @@ const handleTaskDetails = async (taskId: string, projectId: string, historyId: s
                 assignButton.addEventListener('click', () => {
                     const userId = (detailsContent.querySelector('#assignUser') as HTMLSelectElement).value;
                     if (userId) {
-                        handleAssignUserToTask(task.id, userId, projectId, history._id);
+                        handleAssignUserToTask(task._id, userId, projectId, history._id);
                         detailsContainer.remove();
                     } else {
                         alert('Please select a user to assign.');
@@ -264,7 +277,7 @@ const handleTaskDetails = async (taskId: string, projectId: string, historyId: s
             const doneButton = detailsContent.querySelector('#doneTaskButton');
             if (doneButton) {
                 doneButton.addEventListener('click', () => {
-                    handleDoneTask(task.id, projectId);
+                    handleDoneTask(task._id, projectId);
                     detailsContainer.remove();
                 })
             }
@@ -273,13 +286,15 @@ const handleTaskDetails = async (taskId: string, projectId: string, historyId: s
         detailsContainer.appendChild(detailsContent);
         document.body.appendChild(detailsContainer);
     } else {
-        console.error('Task not found');
+        console.error(`Task not found ${taskId}, ${historyId}`);
     }
 };
 
-const handleAssignUserToTask = (taskId: string, userId: string, projectId: string, historyId: string): void => {
-    const task = apiService.getTaskById(taskId);
-    const history = apiService.getHistoryById(historyId)
+const handleAssignUserToTask = async (taskId: string, userId: string, projectId: string, historyId: string): Promise<void> => {
+    const historiesResponse = await axios.get(`http://localhost:3000/histories/${historyId}`);
+    const history = historiesResponse.data;
+    const tasksResponse = await axios.get(`http://localhost:3000/tasks/${taskId}`);
+    const task = tasksResponse.data;
     if (history && task) {
         const user = apiService.getUserById(userId);
         if (user) {
@@ -287,8 +302,8 @@ const handleAssignUserToTask = (taskId: string, userId: string, projectId: strin
             task.status = Status.Doing;
             task.startDate = new Date();
             history.status = Status.Doing;
-            apiService.updateTask(task);
-            apiService.editHistory(history);
+            await axios.put(`http://localhost:3000/tasks/${taskId}`, task);
+            await axios.put(`http://localhost:3000/histories/${historyId}`, history);
             renderHistoryList(projectId);
         } else {
             alert('User not found');
@@ -298,12 +313,13 @@ const handleAssignUserToTask = (taskId: string, userId: string, projectId: strin
     }
 };
 
-const handleDoneTask = (taskId: string, projectId: string): void => {
-    const task = apiService.getTaskById(taskId);
+const handleDoneTask = async (taskId: string, projectId: string): Promise<void> => {
+    const tasksResponse = await axios.get(`http://localhost:3000/tasks/${taskId}`);
+    const task = tasksResponse.data;
     if (task) {
         task.status = Status.Done;
         task.endDate = new Date();
-        apiService.updateTask(task);
+        await axios.put(`http://localhost:3000/tasks/${taskId}`, task);
         renderHistoryList(projectId);
     } else {
         alert('Task not found');

@@ -4,6 +4,7 @@ import * as dotenv from 'dotenv';
 import { connectToDb, getDb } from './mongodb';
 import ProjectModel from '../../models/projectModel';
 import HistoryModel from '../../models/historyModel';
+import TaskModel from '../../models/taskModel';
 
 dotenv.config();
 
@@ -121,13 +122,67 @@ app.get('/projects/:id', async (req, res) => {
 
 app.get('/projects/:project/histories', async (req, res) => {
     try {
-        console.log('Fetching histories for projectId:', req.params.project);
         const db = getDb();
         const histories = await db.collection('histories').find({ project: req.params.project }).toArray();
-        console.log('Fetched histories:', histories);
         res.status(200).send(histories);
     } catch (error) {
         console.error('Error fetching histories:', error);
+        res.sendStatus(500);
+    }
+});
+
+app.get('/histories', async (req, res) => {
+    try{
+        const db = getDb();
+        const histories = await db.collection('histories').find().toArray();
+        res.send(histories).status(200);
+    } catch(error){
+        console.error('Error fetching histories::', error);
+        res.sendStatus(500);
+    }
+});
+
+app.get('/histories/:id', async (req, res) => {
+    try {
+        const db = getDb();
+        const history = await db.collection('histories').findOne({ _id: req.params.id });
+        
+        if (history) {
+            res.status(200).send(history);
+        } else {
+            console.error('History not found');
+            res.sendStatus(404);
+        }
+    } catch (error) {
+        console.error('Error fetching history:', error);
+        res.sendStatus(500);
+    }
+});
+
+app.get('/histories/:id/tasks', async (req, res) => {
+    try {
+        const db = getDb();
+        const tasks = await db.collection('tasks').find({ historyId: req.params.id }).toArray();
+        res.status(200).send(tasks);
+    } catch (error) {
+        console.error('Error fetching tasks:', error);
+        res.sendStatus(500);
+    }
+});
+
+app.get('/tasks/:id', async (req, res) => {
+    try {
+        const db = getDb();
+        const task = await db.collection('tasks').findOne({ _id: req.params.id });
+        
+        if (task) {
+            res.status(200).send(task);
+        } else {
+            console.error('Task not found');
+            res.sendStatus(404);
+        }
+    } catch (error) {
+        console.error('Error fetching task:', error);
         res.sendStatus(500);
     }
 });
@@ -141,6 +196,36 @@ app.post('/projects', async (req: Request, res: Response) => {
         console.log('Project created:', result);
     } catch (error) {
         console.error('Failed to create project', error);
+        res.sendStatus(500);
+    }
+});
+
+app.post('/projects/:projectId/histories', async (req: Request, res: Response) => {
+    try {
+        const db = getDb();
+        const newHistory: HistoryModel = req.body;
+        newHistory.project = req.params.projectId;
+        newHistory.creationDate = new Date();
+        const result = await db.collection('histories').insertOne(newHistory);
+        res.send(result).status(201);
+        console.log('History created:', result);
+    } catch (error) {
+        console.error('Failed to create history', error);
+        res.sendStatus(500);
+    }
+});
+
+app.post('/histories/:historyId/tasks', async (req: Request, res: Response) => {
+    try {
+        const db = getDb();
+        const newTask: TaskModel = req.body;
+        newTask.historyId = req.params.historyId;
+        newTask.addDate = new Date();
+        const result = await db.collection('tasks').insertOne(newTask);
+        res.send(result).status(201);
+        console.log('Task created:', result);
+    } catch (error) {
+        console.error('Failed to create task', error);
         res.sendStatus(500);
     }
 });
@@ -161,6 +246,38 @@ app.put('/projects/:id', async (req: Request, res: Response) => {
     }
 });
 
+app.put('/histories/:id', async (req: Request, res: Response) => {
+    try {
+        const db = getDb();
+        const updatedHistory: HistoryModel = req.body;
+        const result = await db.collection('histories').findOneAndUpdate(
+            { _id: req.params.id },
+            { $set: updatedHistory },
+            { returnOriginal: false }
+        );
+        res.send(result.value);
+    } catch (error) {
+        console.error('Failed to update history', error);
+        res.sendStatus(500);
+    }
+});
+
+app.put('/tasks/:id', async (req: Request, res: Response) => {
+    try {
+        const db = getDb();
+        const updatedTask: TaskModel = req.body;
+        const result = await db.collection('tasks').findOneAndUpdate(
+            { _id: req.params.id },
+            { $set: updatedTask },
+            { returnOriginal: false }
+        );
+        res.send(result.value);
+    } catch (error) {
+        console.error('Failed to update task', error);
+        res.sendStatus(500);
+    }
+});
+
 app.delete('/projects/:id', async (req: Request, res: Response) => {
     try {
         const db = getDb();
@@ -172,17 +289,24 @@ app.delete('/projects/:id', async (req: Request, res: Response) => {
     }
 });
 
-app.post('/projects/:projectId/histories', async (req: Request, res: Response) => {
+app.delete('/histories/:id', async (req: Request, res: Response) => {
     try {
         const db = getDb();
-        const newHistory: HistoryModel = req.body;
-        newHistory.project = req.params.projectId;
-        newHistory.creationDate = new Date();
-        const result = await db.collection('histories').insertOne(newHistory);
-        res.send(result).status(201);
-        console.log('History created:', result);
+        await db.collection('histories').deleteOne(req.body);
+        res.sendStatus(200);
     } catch (error) {
-        console.error('Failed to create history', error);
+        console.error('Failed to delete history', error);
+        res.sendStatus(500);
+    }
+});
+
+app.delete('/tasks/:id', async (req: Request, res: Response) => {
+    try {
+        const db = getDb();
+        await db.collection('tasks').deleteOne(req.body);
+        res.sendStatus(200);
+    } catch (error) {
+        console.error('Failed to delete task', error);
         res.sendStatus(500);
     }
 });
