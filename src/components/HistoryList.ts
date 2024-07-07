@@ -179,6 +179,7 @@ const handleRemoveTask = async (taskId: string, projectId: string): Promise<void
         try{
             await axios.delete(`http://localhost:3000/tasks/${taskId}`);
             renderHistoryList(projectId);
+            console.log(taskId);
         }catch(error){
             console.error('Failed to remove task:', error);
         }
@@ -253,7 +254,7 @@ const handleTaskDetails = async (taskId: string, projectId: string, historyId: s
         const deleteTaskButton = detailsContent.querySelector('#deleteTaskButton');
         if (deleteTaskButton) {
             deleteTaskButton.addEventListener('click', () => {
-                handleRemoveTask(task.id, history.project);
+                handleRemoveTask(task._id, history.project);
                 detailsContainer.remove();
             })
         }
