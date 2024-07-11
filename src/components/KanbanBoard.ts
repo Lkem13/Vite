@@ -9,33 +9,32 @@ const renderKanbanBoard = async (historyId: string): Promise<void> => {
     const tasksResponse = await axios.get(`http://localhost:3000/histories/${historyId}/tasks`);
     const tasks = tasksResponse.data;
 
-
-    if (!history) {
+    if (!histories) {
         console.error(`History with ID ${historyId} not found.`);
         return;
     }
 
-    console.log('Rendering Kanban board for history:', history);
+    console.log('Rendering Kanban board for history:', histories);
     console.log('Tasks:', tasks);
 
     const kanbanContainer = document.getElementById('app');
     if (kanbanContainer) {
         kanbanContainer.innerHTML = `
             <div class="kanban-board">
-            <button id="returnButton">Return</button>
-                <h2>${histories.name} Kanban</h2>
-                <div class="kanban-columns">
-                    <div class="kanban-column" id="todo-column">
-                        <h3>Todo</h3>
-                        <div class="kanban-tasks" id="todo-tasks"></div>
+                <button id="returnButton" class="bg-blue-500 text-white py-2 px-4 rounded mb-4">Return</button>
+                <h1 class="text-xl mb-4 font-bold text-center text-gray-900 dark:text-white">Kanban board: ${histories.name}</h1>
+                <div class="kanban-columns grid grid-cols-3 gap-4">
+                    <div class="kanban-column bg-white dark:bg-gray-800 p-4 rounded">
+                        <h2 class="text-lg mb-2 font-bold text-center text-gray-700 dark:text-gray-300">Todo</h2>
+                        <div class="kanban-tasks space-y-4 text-gray-700 dark:text-gray-300" id="todo-tasks"></div>
                     </div>
-                    <div class="kanban-column" id="doing-column">
-                        <h3>Doing</h3>
-                        <div class="kanban-tasks" id="doing-tasks"></div>
+                    <div class="kanban-column bg-white dark:bg-gray-800 p-4 rounded">
+                        <h2 class="text-lg mb-2 font-bold text-center text-gray-700 dark:text-gray-300">Doing</h2>
+                        <div class="kanban-tasks space-y-4 text-gray-700 dark:text-gray-300" id="doing-tasks"></div>
                     </div>
-                    <div class="kanban-column" id="done-column">
-                        <h3>Done</h3>
-                        <div class="kanban-tasks" id="done-tasks"></div>
+                    <div class="kanban-column bg-white dark:bg-gray-800 p-4 rounded">
+                        <h2 class="text-lg mb-2 font-bold text-center text-gray-700 dark:text-gray-300">Done</h2>
+                        <div class="kanban-tasks space-y-4 text-gray-700 dark:text-gray-300" id="done-tasks"></div>
                     </div>
                 </div>
             </div>
@@ -69,15 +68,16 @@ const renderKanbanBoard = async (historyId: string): Promise<void> => {
 
 const createTaskElement = (task: TaskModel): HTMLElement => {
     const taskElement = document.createElement('div');
-    taskElement.classList.add('kanban-task');
+    taskElement.classList.add('kanban-task', 'border-gray-300', 'p-2', 'rounded', 'mb-4', 'border', 'relative');
+
     taskElement.innerHTML = `
         <div class="task-header">
-            <h4>Name: ${task.name}</h4>
-            <p>Status: ${task.status}</p>
+            <h4 class="text-center font-bold mb-2">${task.name}</h4>
+            <p class="mb-1">Status: ${task.status}</p>
         </div>
         <div class="task-details">
-            <p>Description: ${task.description}</p>
-            <p>Priority: ${task.priority}</p>
+            <p class="mb-1">Description: ${task.description}</p>
+            <p class="mb-1">Priority: ${task.priority}</p>
         </div>
     `;
     return taskElement;

@@ -1,4 +1,4 @@
-import './style.css';
+import './output.css'
 import ProjectModel from './models/projectModel';
 import apiService from './services/apiService';
 import User, { Role } from './models/User';
@@ -10,8 +10,8 @@ import axios from 'axios';
 
 const appDiv = document.getElementById('app');
 if (appDiv) {
-    const loginForm = createLoginForm();
-    appDiv.appendChild(loginForm);
+     const loginForm = createLoginForm();
+     appDiv.appendChild(loginForm);
 }
 
 //mock
@@ -23,6 +23,7 @@ if (currentUser) {
     console.log('Guest');
 }
 
+/*
 const response = await axios.get('http://localhost:3000/projects/1');
 console.log(response.status);
 if (response.status === 200) {
@@ -33,7 +34,7 @@ if (response.status === 200) {
     };
     await axios.post('http://localhost:300/projects', project);
     console.log('test');
-}
+}*/
 
 
 if (!apiService.getUserById('1')) {

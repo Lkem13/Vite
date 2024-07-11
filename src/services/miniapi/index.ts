@@ -104,6 +104,17 @@ app.get('/projects', async (req, res) => {
     }
 });
 
+app.get('/users', async (req, res) => {
+    try{
+        const db = getDb();
+        const users = await db.collection('users').find().toArray();
+        res.send(users).status(200);
+    } catch(error){
+        console.error('Error fetching users:', error);
+        res.sendStatus(500);
+    }
+});
+
 app.get('/projects/:id', async (req, res) => {
     try{
         const db = getDb();
@@ -184,6 +195,19 @@ app.get('/tasks/:id', async (req, res) => {
     } catch (error) {
         console.error('Error fetching task:', error);
         res.sendStatus(500);
+    }
+});
+
+app.get('/projects/:projectId/allTasks', async (req, res) => {
+    try {
+        const db = getDb();
+        const histories = await db.collection('histories').find({ project: req.params.projectId }).toArray();
+        const historyIds = histories.map((history: { _id: string }) => history._id);
+        const tasks = await db.collection('tasks').find({ historyId: { $in: historyIds } }).toArray();
+        res.status(200).json(tasks);
+    } catch (error) {
+        console.error('Failed to fetch tasks:', error);
+        res.status(500).json({ error: 'Failed to fetch tasks' });
     }
 });
 
@@ -281,7 +305,7 @@ app.put('/tasks/:id', async (req: Request, res: Response) => {
 app.delete('/projects/:id', async (req: Request, res: Response) => {
     try {
         const db = getDb();
-        await db.collection('projects').deleteOne(req.body);
+        await db.collection('projects').deleteOne({ _id: req.params.id});
         res.sendStatus(200);
     } catch (error) {
         console.error('Failed to delete project', error);
@@ -292,7 +316,7 @@ app.delete('/projects/:id', async (req: Request, res: Response) => {
 app.delete('/histories/:id', async (req: Request, res: Response) => {
     try {
         const db = getDb();
-        await db.collection('histories').deleteOne(req.body);
+         await db.collection('histories').deleteOne({ _id: req.params.id });
         res.sendStatus(200);
     } catch (error) {
         console.error('Failed to delete history', error);
@@ -303,7 +327,7 @@ app.delete('/histories/:id', async (req: Request, res: Response) => {
 app.delete('/tasks/:id', async (req: Request, res: Response) => {
     try {
         const db = getDb();
-        await db.collection('tasks').deleteOne(req.body);
+        await db.collection('tasks').deleteOne({ _id: req.params.id});
         res.sendStatus(200);
     } catch (error) {
         console.error('Failed to delete task', error);
