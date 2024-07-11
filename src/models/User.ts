@@ -5,13 +5,13 @@ enum Role {
 }
 
 export default class User {
-    id: string;
+    _id: string;
     name: string;
     surname: string;
     role: Role;
 
     constructor(id: string, name: string, surname: string, role: Role) {
-        this.id = id;
+        this._id = id;
         this.name = name;
         this.surname = surname;
         this.role = role;

@@ -5,10 +5,14 @@ import { connectToDb, getDb } from './mongodb';
 import ProjectModel from '../../models/projectModel';
 import HistoryModel from '../../models/historyModel';
 import TaskModel from '../../models/taskModel';
+import UserModel, { Role } from '../../models/User';
+import axios from 'axios';
+import User from '../../models/User';
 
 dotenv.config();
 
 const cors = require('cors');
+
 
 const app: Express = express()
 
@@ -60,10 +64,12 @@ app.get(
         }, delay)
     }
 )
+
 app.listen(port, async () => {
     try{
         await connectToDb();
         console.log(`Example app listening on port ${port}`)
+        await addMockUsers();
     } catch (error){
         console.error('Error:', error);
         process.exit(1);
@@ -224,6 +230,19 @@ app.post('/projects', async (req: Request, res: Response) => {
     }
 });
 
+app.post('/users', async (req: Request, res: Response) => {
+    try {
+        const db = getDb();
+        const newUser: UserModel = req.body;
+        const result = await db.collection('users').insertOne(newUser);
+        res.send(result).status(201);
+        console.log('User created:', result);
+    } catch (error) {
+        console.error('Failed to create user', error);
+        res.sendStatus(500);
+    }
+});
+
 app.post('/projects/:projectId/histories', async (req: Request, res: Response) => {
     try {
         const db = getDb();
@@ -334,3 +353,36 @@ app.delete('/tasks/:id', async (req: Request, res: Response) => {
         res.sendStatus(500);
     }
 });
+
+app.post('/mockUsers', async (req, res) => {
+    try {
+        const db = getDb();
+        const users: UserModel[] = [
+            { _id: '1', name: 'David', surname: 'Strong', role: Role.Admin },
+            { _id: '2', name: 'John', surname: 'Mike', role: Role.DevOPS },
+            { _id: '3', name: 'Roger', surname: 'Sting', role: Role.Developer }
+        ];
+
+        await db.collection('users').insertMany(users);
+        res.status(201).send('Mock users added');
+        console.log('Mock users created:', users);
+    } catch (error) {
+        console.error('Failed to create mock users');
+        res.sendStatus(500);
+    }
+});
+
+export async function addMockUsers() {
+    const mockUsers: User[] = [
+        { _id: '1', name: 'David', surname: 'Strong', role: Role.Admin },
+        { _id: '2', name: 'John', surname: 'Mike', role: Role.DevOPS },
+        { _id: '3', name: 'Roger', surname: 'Sting', role: Role.Developer }
+    ];
+
+    try {
+        await axios.post('http://localhost:3000/mockUsers', mockUsers);
+        console.log('Mock users added');
+    } catch (error) {
+        console.error('Error adding mock users:');
+    }
+}
