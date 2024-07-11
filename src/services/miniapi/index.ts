@@ -1,5 +1,5 @@
 import * as jwt from 'jsonwebtoken';
-import express, { Express, Request, Response } from "express";
+import express, { Express, NextFunction, Request, Response } from "express";
 import * as dotenv from 'dotenv';
 import { connectToDb, getDb } from './mongodb';
 import ProjectModel from '../../models/projectModel';
@@ -8,6 +8,7 @@ import TaskModel from '../../models/taskModel';
 import UserModel, { Role } from '../../models/User';
 import axios from 'axios';
 import User from '../../models/User';
+import cookieParser from 'cookie-parser';
 
 dotenv.config();
 
@@ -22,8 +23,12 @@ const tokenSecret = process.env.TOKEN_SECRET as string
 console.log('Token Secret:', tokenSecret);
 let refreshToken: string
 let currentProject: ProjectModel | null = null;
-app.use(cors())
+app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true
+}));
 app.use(express.json())
+app.use(cookieParser());
 
 app.get('/', (req: Request, res: Response) => {
     res.send('Hello World - simple api with JWT!')
@@ -35,22 +40,26 @@ app.post(
         const expTime = req.body.exp || 60
         const token = generateToken(+expTime)
         refreshToken = generateToken(60 * 60)
+        res.cookie('token', token, { httpOnly: true, maxAge: 3600000 });
+        res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 86400000 });
         res.status(200).send({ token, refreshToken })
     }
 )
 app.post(
     "/refreshToken",
     function (req, res) {
-        const refreshTokenFromPost = req.body.refreshToken
-        if (refreshToken !== refreshTokenFromPost) {
-            res.status(400).send('Bad refresh token!')
+        const refreshTokenFromPost = req.cookies['refreshToken'];
+        if (!refreshTokenFromPost || refreshToken !== refreshTokenFromPost) {
+            return res.status(400).send('Bad refresh token!');
         }
-        const expTime = req.headers.exp || 60
-        const token = generateToken(+expTime)
-        refreshToken = generateToken(60 * 60)
+        const expTime = req.headers.exp || 60;
+        const token = generateToken(+expTime);
+        const newRefreshToken = generateToken(60 * 60);
+        res.cookie('token', token, { httpOnly: true, maxAge: 3600000 });
+        res.cookie('refreshToken', newRefreshToken, { httpOnly: true, maxAge: 86400000 });
         setTimeout(() => {
-            res.status(200).send({ token, refreshToken })
-        }, 3000)
+            res.status(200).send({ token, refreshToken: newRefreshToken });
+        }, 3000);
     }
 )
 app.get(
@@ -83,21 +92,69 @@ function generateToken(expirationInSeconds: number) {
     return token
 }
 
-function verifyToken(req: any, res: any, next: any) {
-    const authHeader = req.headers['authorization']
-    const token = authHeader?.split(' ')[1]
+function verifyToken(req: Request, res: Response, next: NextFunction) {
+    const token = req.cookies['token'] || req.headers['authorization']?.split(' ')[1];
 
-    if (!token) return res.sendStatus(403)
+    if (!token) {
+        return res.sendStatus(403);
+    }
 
-    jwt.verify(token, tokenSecret, (err: any, user: any) => {
+    jwt.verify(token, tokenSecret, (err: any, decoded: any) => {
         if (err) {
-            console.log(err)
-            return res.status(401).send(err.message)
+            console.error('Token verification error:', err);
+            return res.status(401).send('Failed to authenticate token');
         }
-        req.user = user
-        next()
-    })
+        (req as any).user = decoded;
+        next();
+    });
 }
+
+app.post('/users/login', async (req: Request, res: Response) => {
+    const { login } = req.body;
+
+    try {
+        const db = await getDb();
+        const user = await db.collection('users').findOne({ login });
+
+        if (!user) {
+            return res.status(401).send('Invalid username or password');
+        }
+
+        const token = jwt.sign({ login, role: user.role }, tokenSecret, { expiresIn: '1h' });
+        const refreshToken = jwt.sign({ login }, tokenSecret, { expiresIn: '24h' });
+
+        res.cookie('token', token, { httpOnly: true, maxAge: 3600000 });
+        res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 86400000 });
+        console.log('Login successful:', user.login, user.role);
+        console.log('Token:', token);
+        res.status(200).send({ token, refreshToken });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).send('Internal server error');
+    }
+});
+
+app.get('/users/me', verifyToken, async (req: Request, res: Response) => {
+    try {
+        const loggedInUser = (req as any).user;
+
+        if (!loggedInUser) {
+            return res.status(401).send('User not authenticated');
+        }
+
+        const db = await getDb();
+        const user = await db.collection('users').findOne({ login: loggedInUser.login });
+
+        if (!user) {
+            return res.status(404).send('User not found');
+        }
+
+        res.status(200).json(user);
+    } catch (error) {
+        console.error('Error fetching user:', error);
+        res.status(500).send('Internal server error');
+    }
+});
 
 app.get('/projects', async (req, res) => {
     try{
@@ -358,9 +415,9 @@ app.post('/mockUsers', async (req, res) => {
     try {
         const db = getDb();
         const users: UserModel[] = [
-            { _id: '1', name: 'David', surname: 'Strong', role: Role.Admin },
-            { _id: '2', name: 'John', surname: 'Mike', role: Role.DevOPS },
-            { _id: '3', name: 'Roger', surname: 'Sting', role: Role.Developer }
+            { _id: '1', name: 'David', surname: 'Strong', role: Role.Admin, login: 'admin'},
+            { _id: '2', name: 'John', surname: 'Mike', role: Role.DevOPS, login: 'devops'},
+            { _id: '3', name: 'Roger', surname: 'Sting', role: Role.Developer, login: 'dev'}
         ];
 
         await db.collection('users').insertMany(users);
@@ -374,9 +431,9 @@ app.post('/mockUsers', async (req, res) => {
 
 export async function addMockUsers() {
     const mockUsers: User[] = [
-        { _id: '1', name: 'David', surname: 'Strong', role: Role.Admin },
-        { _id: '2', name: 'John', surname: 'Mike', role: Role.DevOPS },
-        { _id: '3', name: 'Roger', surname: 'Sting', role: Role.Developer }
+        { _id: '1', name: 'David', surname: 'Strong', role: Role.Admin, login: 'admin' },
+        { _id: '2', name: 'John', surname: 'Mike', role: Role.DevOPS, login: 'devops'},
+        { _id: '3', name: 'Roger', surname: 'Sting', role: Role.Developer, login: 'dev'}
     ];
 
     try {

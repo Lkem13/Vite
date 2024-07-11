@@ -4,12 +4,14 @@ import TaskModel from "../models/taskModel";
 import User from "../models/User";
 
 export default class apiService{
+    /*
     private static apiKey = '1234';
     private static userApiKey = 'user';
-    private static currentProject: ProjectModel | null = null;
     private static historyApiKey = 'history';
     private static usersApiKey = 'users';
     private static tasksApiKey = 'tasks';
+*/
+    private static currentProject: ProjectModel | null = null;
 
     /*
     static getAllProjects(): ProjectModel[]{
@@ -48,7 +50,7 @@ export default class apiService{
         });
         localStorage.setItem(this.apiKey, JSON.stringify(updatedProjects));
     }   */
-
+/*
     static getCurrentUser(): User | null {
         const user = JSON.parse(localStorage.getItem(this.userApiKey) || '[]');
         return user;
@@ -56,12 +58,12 @@ export default class apiService{
 
     static getAllUsers(): User[] {
         const users = JSON.parse(localStorage.getItem(this.usersApiKey) || '[]');
-        return users.map((user: any) => new User(user.id, user.name, user.surname, user.role));
+        return users.map((user: any) => new User(user._id, user.name, user.surname, user.role, user.login));
     }
 
     static getUserById(id: string): User | null {
         const users = this.getAllUsers();
-        const user = users.find((user: User) => user.id === id);
+        const user = users.find((user: User) => user._id === id);
         return user || null;
     }
 
@@ -69,7 +71,7 @@ export default class apiService{
         const users = this.getAllUsers();
         users.push(user);
         localStorage.setItem(this.usersApiKey, JSON.stringify(users));
-    }
+    }*/
 
     static getCurrentProject(): ProjectModel | null {
         return this.currentProject;

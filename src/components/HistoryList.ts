@@ -274,18 +274,20 @@ const handleRemoveTask = async (taskId: string, projectId: string): Promise<void
 };
 
 const handleTaskDetails = async (taskId: string, projectId: string, historyId: string): Promise<void> => {
-    const [tasksResponse, projectsResponse, historiesResponse] = await Promise.all([
+    const [tasksResponse, projectsResponse, historiesResponse, usersResponse] = await Promise.all([
         axios.get(`http://localhost:3000/tasks/${taskId}`),
         axios.get(`http://localhost:3000/projects/${projectId}`),
-        axios.get(`http://localhost:3000/histories/${historyId}`)
+        axios.get(`http://localhost:3000/histories/${historyId}`),
+        axios.get(`http://localhost:3000/users`)
     ]);
 
     const task = tasksResponse.data;
     const project = projectsResponse.data;
     const history = historiesResponse.data;
+    const users = usersResponse.data;
 
     if (history && task) {
-        const assignedUser = task.assignedUser ? `${task.assignedUser.name} ${task.assignedUser.surname}` : 'Unassigned';
+        const assignedUser = task.assignedUser ? `${getUserFullName(task.assignedUser, users)}` : 'Unassigned';
 
         const formatDate = (dateString: string) => {
             const date = new Date(dateString);
@@ -298,17 +300,17 @@ const handleTaskDetails = async (taskId: string, projectId: string, historyId: s
         };
 
         const assignUserSection = !task.assignedUser
-    ? `
-        <div id="assignSection" class="my-2">
-            <label for="assignUser" class="block text-sm font-medium text-gray-700">Assign User:</label>
-            <select id="assignUser" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                <option value="">Select User</option>
-                ${apiService.getAllUsers().map(user => `<option value="${user.id}">${user.name} ${user.surname}</option>`).join('')}
-            </select>
-            <button id="assignUserButton" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Assign User</button>
-        </div>
-    `
-    : '';
+            ? `
+                <div id="assignSection" class="my-2">
+                    <label for="assignUser" class="block text-sm font-medium text-gray-700">Assign User:</label>
+                    <select id="assignUser" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                        <option value="">Select User</option>
+                        ${users.map((user: any) => `<option value="${user._id}">${user.name} ${user.surname}</option>`).join('')}
+                    </select>
+                    <button id="assignUserButton" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Assign User</button>
+                </div>
+            `
+            : '';
 
         const doneTaskButton = task.assignedUser && task.status !== 'done'
             ? `
@@ -361,15 +363,15 @@ const handleTaskDetails = async (taskId: string, projectId: string, historyId: s
             });
         }
 
-        if(task.assignedUser){
+        if (task.assignedUser && task.status !== 'done') {
             const doneButton = detailsContent.querySelector('#doneTaskButton');
-            if(doneButton){
+            if (doneButton) {
                 doneButton.addEventListener('click', async () => {
                     handleDoneTask(task._id, projectId);
-                        detailsContainer.remove();
-            });
-        }};
-        
+                    detailsContainer.remove();
+                });
+            }
+        }
 
         if (!task.assignedUser) {
             const assignButton = detailsContent.querySelector('#assignUserButton');
@@ -387,112 +389,111 @@ const handleTaskDetails = async (taskId: string, projectId: string, historyId: s
         }
 
         const editTaskButton = detailsContent.querySelector('#editTaskButton');
-if (editTaskButton) {
-    editTaskButton.addEventListener('click', () => {
-        const toggleEditMode = () => {
-            const editableFields = [
-                { id: 'taskName', value: task.name, type: 'text' },
-                { id: 'taskDescription', value: task.description, type: 'text' },
-                { id: 'taskEstimatedTime', value: `${task.estimatedTime}`, type: 'number' },
-                { id: 'assignedUser', value: task.assignedUser ? task.assignedUser._id : '', type: 'select' }
-            ];
+        if (editTaskButton) {
+            editTaskButton.addEventListener('click', () => {
+                const toggleEditMode = () => {
+                    const editableFields = [
+                        { id: 'taskName', value: task.name, type: 'text' },
+                        { id: 'taskDescription', value: task.description, type: 'text' },
+                        { id: 'taskEstimatedTime', value: `${task.estimatedTime}`, type: 'number' },
+                        { id: 'assignedUser', value: task.assignedUser ? task.assignedUser._id : '', type: 'select' }
+                    ];
 
-            const doneButton = detailsContent.querySelector('#doneTaskButton');
-            doneButton?.remove();
-            const assignUserSection = detailsContent.querySelector('#assignSection');
-            assignUserSection?.remove();
+                    const doneButton = detailsContent.querySelector('#doneTaskButton');
+                    doneButton?.remove();
+                    const assignUserSection = detailsContent.querySelector('#assignSection');
+                    assignUserSection?.remove();
 
-            editableFields.forEach(field => {
-                const element = detailsContent.querySelector(`#${field.id}`);
-                if (element) {
-                    if (field.type === 'select') {
+                    editableFields.forEach(field => {
+                        const element = detailsContent.querySelector(`#${field.id}`);
+                        if (element) {
+                            if (field.type === 'select') {
+                                const select = document.createElement('select');
+                                select.className = 'mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md';
+
+                                const usersOptions = users.map((user: any) => `
+                                    <option value="${user._id}" ${task.assignedUser && task.assignedUser._id === user._id ? 'selected' : ''}>${user.name} ${user.surname}</option>
+                                `).join('');
+
+                                select.innerHTML = `
+                                    <option value="">Select User</option>
+                                    ${usersOptions}
+                                `;
+                                element.replaceWith(select);
+                                select.id = field.id;
+                            } else {
+                                const input = document.createElement('input');
+                                input.type = field.type;
+                                input.value = field.value;
+                                input.className = 'mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md';
+                                element.replaceWith(input);
+                                input.id = field.id;
+                            }
+                        }
+                    });
+
+                    const priorityElement = detailsContent.querySelector('#taskPriority');
+                    if (priorityElement) {
                         const select = document.createElement('select');
                         select.className = 'mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md';
-
-                        const usersOptions = apiService.getAllUsers().map(user => `
-                            <option value="${user.id}" ${task.assignedUser && task.assignedUser._id === user.id ? 'selected' : ''}>${user.name} ${user.surname}</option>
+                        select.innerHTML = Object.values(Priority).map(value => `
+                            <option value="${value}" ${task.priority === value ? 'selected' : ''}>${value.charAt(0).toUpperCase() + value.slice(1)}</option>
                         `).join('');
-
-                        select.innerHTML = `
-                            <option value="">Select User</option>
-                            ${usersOptions}
-                        `;
-                        element.replaceWith(select);
-                        select.id = field.id;
-                    } else {
-                        const input = document.createElement('input');
-                        input.type = field.type;
-                        input.value = field.value;
-                        input.className = 'mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md';
-                        element.replaceWith(input);
-                        input.id = field.id;
+                        priorityElement.replaceWith(select);
+                        select.id = 'taskPriority';
                     }
+
+                    const statusElement = detailsContent.querySelector('#taskStatus');
+                    if (statusElement) {
+                        const select = document.createElement('select');
+                        select.className = 'mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md';
+                        select.innerHTML = Object.values(Status).map(value => `
+                            <option value="${value}" ${task.status === value ? 'selected' : ''}>${value.charAt(0).toUpperCase() + value.slice(1)}</option>
+                        `).join('');
+                        statusElement.replaceWith(select);
+                        select.id = 'taskStatus';
+                    }
+
+                    editTaskButton.textContent = 'Save';
+                    editTaskButton.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
+                    editTaskButton.classList.add('bg-green-500', 'hover:bg-green-600');
+                };
+
+                const saveChanges = async () => {
+                    const newName = (detailsContent.querySelector('#taskName') as HTMLInputElement).value.trim();
+                    const newDescription = (detailsContent.querySelector('#taskDescription') as HTMLInputElement).value.trim();
+                    const newEstimatedTime = parseFloat((detailsContent.querySelector('#taskEstimatedTime') as HTMLInputElement).value);
+                    const newPriority = (detailsContent.querySelector('#taskPriority') as HTMLSelectElement).value as Priority;
+                    const newStatus = (detailsContent.querySelector('#taskStatus') as HTMLSelectElement).value as Status;
+                    const newAssignedUserId = (detailsContent.querySelector('#assignedUser') as HTMLSelectElement).value;
+
+                    const updatedTask = {
+                        ...task,
+                        name: newName,
+                        description: newDescription,
+                        estimatedTime: newEstimatedTime,
+                        priority: newPriority,
+                        status: newStatus,
+                        assignedUser: newAssignedUserId
+                    };
+
+                    try {
+                        await axios.put(`http://localhost:3000/tasks/${taskId}`, updatedTask);
+                        handleAssignUserToTask(taskId, newAssignedUserId, projectId, historyId);
+                        detailsContainer.remove();
+                    } catch (error) {
+                        console.error('Failed to update task', error);
+                        alert('Failed to update task. Please try again.');
+                    }
+                };
+
+                if (editTaskButton.textContent === 'Edit') {
+                    toggleEditMode();
+                } else {
+                    saveChanges();
                 }
             });
-
-            const priorityElement = detailsContent.querySelector('#taskPriority');
-            if (priorityElement) {
-                const select = document.createElement('select');
-                select.className = 'mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md';
-                select.innerHTML = Object.values(Priority).map(value => `
-                    <option value="${value}" ${task.priority === value ? 'selected' : ''}>${value.charAt(0).toUpperCase() + value.slice(1)}</option>
-                `).join('');
-                priorityElement.replaceWith(select);
-                select.id = 'taskPriority';
-            }
-
-            const statusElement = detailsContent.querySelector('#taskStatus');
-            if (statusElement) {
-                const select = document.createElement('select');
-                select.className = 'mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md';
-                select.innerHTML = Object.values(Status).map(value => `
-                    <option value="${value}" ${task.status === value ? 'selected' : ''}>${value.charAt(0).toUpperCase() + value.slice(1)}</option>
-                `).join('');
-                statusElement.replaceWith(select);
-                select.id = 'taskStatus';
-            }
-
-            editTaskButton.textContent = 'Save';
-            editTaskButton.classList.remove('bg-yellow-500', 'hover:bg-yellow-600');
-            editTaskButton.classList.add('bg-green-500', 'hover:bg-green-600');
-        };
-
-        const saveChanges = async () => {
-            const newName = (detailsContent.querySelector('#taskName') as HTMLInputElement).value.trim();
-            const newDescription = (detailsContent.querySelector('#taskDescription') as HTMLInputElement).value.trim();
-            const newEstimatedTime = parseFloat((detailsContent.querySelector('#taskEstimatedTime') as HTMLInputElement).value);
-            const newPriority = (detailsContent.querySelector('#taskPriority') as HTMLSelectElement).value as Priority;
-            const newStatus = (detailsContent.querySelector('#taskStatus') as HTMLSelectElement).value as Status;
-            const newAssignedUserId = (detailsContent.querySelector('#assignedUser') as HTMLSelectElement).value;
-
-            const updatedTask = {
-                ...task,
-                name: newName,
-                description: newDescription,
-                estimatedTime: newEstimatedTime,
-                priority: newPriority,
-                status: newStatus,
-                assignedUser: newAssignedUserId 
-            };
-
-            try {
-                await axios.put(`http://localhost:3000/tasks/${taskId}`, updatedTask);
-                handleAssignUserToTask(taskId, newAssignedUserId, projectId, historyId);
-                console.log(newAssignedUserId);
-                detailsContainer.remove();
-            } catch (error) {
-                console.error('Failed to update task', error);
-                alert('Failed to update task. Please try again.');
-            }
-        };
-
-        if (editTaskButton.textContent === 'Edit') {
-            toggleEditMode();
-        } else {
-            saveChanges();
         }
-    });
-}
 
         detailsContainer.appendChild(detailsContent);
         document.body.appendChild(detailsContainer);
@@ -500,27 +501,45 @@ if (editTaskButton) {
         console.error(`Task not found ${taskId}, ${historyId}`);
     }
 };
+
 const handleAssignUserToTask = async (taskId: string, userId: string, projectId: string, historyId: string): Promise<void> => {
-    const historiesResponse = await axios.get(`http://localhost:3000/histories/${historyId}`);
-    const history = historiesResponse.data;
-    const tasksResponse = await axios.get(`http://localhost:3000/tasks/${taskId}`);
-    const task = tasksResponse.data;
+    const [historyResponse, taskResponse, usersResponse] = await Promise.all([
+        axios.get(`http://localhost:3000/histories/${historyId}`),
+        axios.get(`http://localhost:3000/tasks/${taskId}`),
+        axios.get(`http://localhost:3000/users`)
+    ]);
+
+    const history = historyResponse.data;
+    const task = taskResponse.data;
+    const users = usersResponse.data;
+
     if (history && task) {
-        const user = apiService.getUserById(userId);
+        const user = users.find((user: any) => user._id === userId);
         if (user) {
             task.assignedUser = user;
             task.status = Status.Doing;
             task.startDate = new Date();
             history.status = Status.Doing;
-            await axios.put(`http://localhost:3000/tasks/${taskId}`, task);
-            await axios.put(`http://localhost:3000/histories/${historyId}`, history);
-            renderHistoryList(projectId);
+
+            try {
+                await axios.put(`http://localhost:3000/tasks/${taskId}`, task);
+                await axios.put(`http://localhost:3000/histories/${historyId}`, history);
+                renderHistoryList(projectId);
+            } catch (error) {
+                console.error('Failed to update task or history', error);
+                alert('Failed to update task or history. Please try again.');
+            }
         } else {
             alert('User not found');
         }
     } else {
-        alert('Task not found');
+        alert('Task or history not found');
     }
+};
+
+const getUserFullName = (user: any, users: any[]) => {
+    const foundUser = users.find(u => u._id === user._id);
+    return foundUser ? `${foundUser.name} ${foundUser.surname}` : 'Unknown User';
 };
 
 const handleDoneTask = async (taskId: string, projectId: string): Promise<void> => {

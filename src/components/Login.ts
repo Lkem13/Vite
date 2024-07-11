@@ -36,10 +36,10 @@ export function createLoginForm(): HTMLDivElement {
     loginForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         try {
-            const response = await axios.post('http://localhost:3000/token', {
-                username: usernameInput.value,
+            const response = await axios.post('http://localhost:3000/users/login', {
+                login: usernameInput.value,
                 password: passwordInput.value,
-            });
+            }, { withCredentials: true });
 
             const { token, refreshToken } = response.data;
             localStorage.setItem('token', token);

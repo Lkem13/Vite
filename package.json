@@ -30,6 +30,7 @@
     "@types/mongodb": "^4.0.7",
     "axios": "^1.7.2",
     "concurrently": "^8.2.2",
+    "cookie-parser": "^1.4.6",
     "mongodb": "^6.7.0",
     "uuid": "^9.0.1"
   }

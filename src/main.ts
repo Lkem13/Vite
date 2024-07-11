@@ -3,12 +3,30 @@ import ProjectModel from './models/projectModel';
 import User, { Role } from './models/User';
 import { createLoginForm } from './components/Login';
 import axios from 'axios';
+import createLayout from './components/layout';
+import { renderProjects } from './components/ProjectList';
 
 const appDiv = document.getElementById('app');
-if (appDiv) {
-    const loginForm = createLoginForm();
-    appDiv.appendChild(loginForm);
-}
+
+const initApp = async () => {
+    try {
+        const token = localStorage.getItem('token');
+        const refreshToken = localStorage.getItem('refreshToken');
+
+        if (token && refreshToken) {
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+            await createLayout();
+            await renderProjects();
+
+        } else {
+            const loginForm = createLoginForm();
+            appDiv?.appendChild(loginForm);
+        }
+    } catch (error) {
+        console.error('Initialization error:', error);
+    }
+};
 
 async function fetchAndAddProject() {
     try {
@@ -30,4 +48,4 @@ async function fetchAndAddProject() {
     }
 }
 
-fetchAndAddProject();
+initApp();
